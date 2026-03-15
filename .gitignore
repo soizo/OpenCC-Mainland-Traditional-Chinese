@@ -1,4 +1,18 @@
+# 測試與臨時文件
 test/
 tmp/
+
+# 系統文件
 .DS_Store
+Thumbs.db
+
+# OpenCC 二進制（系統安裝的）
 opencc
+opencc_dict
+
+# 編輯器
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
