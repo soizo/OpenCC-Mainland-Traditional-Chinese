@@ -1,0 +1,50 @@
+name: 詞庫驗證
+
+on:
+  push:
+    paths:
+      - 's2mt/SMTCharacters.txt'
+      - 's2mt/SMTPhrases.txt'
+  pull_request:
+    paths:
+      - 's2mt/SMTCharacters.txt'
+      - 's2mt/SMTPhrases.txt'
+
+jobs:
+  validate:
+    name: 格式與重複鍵檢查
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 檢查文件編碼（UTF-8）
+        run: |
+          for f in s2mt/SMTCharacters.txt s2mt/SMTPhrases.txt; do
+            if ! file "$f" | grep -qE 'UTF-8|ASCII'; then
+              echo "::error file=$f::文件編碼不是 UTF-8"
+              exit 1
+            fi
+          done
+          echo "編碼檢查通過"
+
+      - name: 檢查重複鍵
+        run: |
+          FAILED=0
+          for f in s2mt/SMTCharacters.txt s2mt/SMTPhrases.txt; do
+            DUPES=$(grep -v '^#' "$f" | grep $'\t' | awk -F'\t' '{print $1}' | sort | uniq -d)
+            if [ -n "$DUPES" ]; then
+              echo "::warning file=$f::發現重複鍵（以下鍵有多條規則，僅最後一條生效）："
+              echo "$DUPES"
+              FAILED=1
+            fi
+          done
+          if [ "$FAILED" -eq 0 ]; then
+            echo "重複鍵檢查通過"
+          fi
+
+      - name: 統計詞庫條目數
+        run: |
+          for f in s2mt/SMTCharacters.txt s2mt/SMTPhrases.txt; do
+            COUNT=$(grep -v '^#' "$f" | grep -c $'\t' || true)
+            echo "$f：$COUNT 條有效映射"
+          done
